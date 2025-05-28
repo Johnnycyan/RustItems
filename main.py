@@ -13,9 +13,9 @@ from bs4 import BeautifulSoup
 # FlareSolverr configuration
 FLARESOLVERR_URL = os.environ["proxy"]
 characters = string.ascii_letters + string.digits
-    result = ''
-    for i in range(20):
-        result += random.choice(characters)
+result = ''
+for i in range(20):
+    result += random.choice(characters)
 SESSION = result
 
 def solve_cloudflare(url: str, retries: int = 3) -> str:
