@@ -60,11 +60,12 @@ def get_page_content(url: str) -> str:
     """
     # Check if we're running in GitHub Actions (FlareSolverr available)
     try:
+        return solve_cloudflare(url)
         # Test if FlareSolverr is available
-        test_response = requests.get(FLARESOLVERR_URL, timeout=5)
-        if test_response.status_code == 200:
-            print(f"Using FlareSolverr for {url}")
-            return solve_cloudflare(url)
+        # test_response = requests.get(FLARESOLVERR_URL, timeout=5)
+        # if test_response.status_code == 200:
+        #     print(f"Using FlareSolverr for {url}")
+        #     return solve_cloudflare(url)
     except:
         pass
     
