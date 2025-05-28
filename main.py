@@ -51,7 +51,7 @@ def extract_item_data(href: str, info_block: bs4.Tag, name_to_info: dict) -> dic
 
 
 def main() -> None:
-    response = requests.get('https://rustlabs.com/group=itemlist', headers=HEADERS)
+    response = requests.get('https://wiki.rustclash.com/group=itemlist', headers=HEADERS)
 
     if response.status_code != 200:
         print("An Error Has Occurred with request")
