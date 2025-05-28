@@ -1,4 +1,5 @@
 import json
+import os
 import bs4.element
 import requests
 import time
@@ -13,7 +14,7 @@ HEADERS = {
 }
 
 # FlareSolverr configuration
-FLARESOLVERR_URL = "http://localhost:8191/v1"
+FLARESOLVERR_URL = os.environ.get('PROXY')
 
 def solve_cloudflare(url: str, retries: int = 3) -> str:
     """
