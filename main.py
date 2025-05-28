@@ -8,11 +8,6 @@ from collections import defaultdict
 
 from bs4 import BeautifulSoup
 
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-}
-
 # FlareSolverr configuration
 FLARESOLVERR_URL = os.environ["proxy"]
 
@@ -23,13 +18,12 @@ def solve_cloudflare(url: str, retries: int = 3) -> str:
     payload = {
         "cmd": "request.get",
         "url": url,
-        "maxTimeout": 180000,
-        "headers": HEADERS
+        "maxTimeout": 180000
     }
     
     for attempt in range(retries):
         try:
-            response = requests.post(FLARESOLVERR_URL, json=payload, timeout=120)
+            response = requests.post(FLARESOLVERR_URL, json=payload, timeout=180)
             result = response.json()
             
             if result.get("status") == "ok":
