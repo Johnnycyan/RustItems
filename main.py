@@ -12,6 +12,67 @@ HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
 }
 
+# FlareSolverr configuration
+FLARESOLVERR_URL = "http://localhost:8191/v1"
+
+def solve_cloudflare(url: str, retries: int = 3) -> str:
+    """
+    Use FlareSolverr to bypass Cloudflare protection and return HTML content
+    """
+    payload = {
+        "cmd": "request.get",
+        "url": url,
+        "maxTimeout": 180000,
+        "headers": HEADERS
+    }
+    
+    for attempt in range(retries):
+        try:
+            response = requests.post(FLARESOLVERR_URL, json=payload, timeout=120)
+            result = response.json()
+            
+            if result.get("status") == "ok":
+                return result["solution"]["response"]
+            else:
+                print(f"FlareSolverr error for {url}: {result.get('message', 'Unknown error')}")
+                
+        except Exception as e:
+            print(f"Attempt {attempt + 1} failed for {url}: {str(e)}")
+            
+        if attempt < retries - 1:
+            time.sleep(5)  # Wait before retry
+    
+    # Fallback to regular requests if FlareSolverr fails
+    print(f"FlareSolverr failed for {url}, trying regular request...")
+    try:
+        fallback_response = requests.get(url, headers=HEADERS, timeout=30)
+        if fallback_response.status_code == 200:
+            return fallback_response.content.decode('utf-8')
+    except Exception as e:
+        print(f"Fallback request also failed: {str(e)}")
+    
+    return ""
+
+def get_page_content(url: str) -> str:
+    """
+    Get page content, using FlareSolverr if available, otherwise regular requests
+    """
+    # Check if we're running in GitHub Actions (FlareSolverr available)
+    try:
+        # Test if FlareSolverr is available
+        test_response = requests.get(FLARESOLVERR_URL, timeout=5)
+        if test_response.status_code == 200:
+            print(f"Using FlareSolverr for {url}")
+            return solve_cloudflare(url)
+    except:
+        pass
+    
+    # Fallback to regular requests
+    print(f"Using regular requests for {url}")
+    response = requests.get(url, headers=HEADERS, timeout=30)
+    if response.status_code == 200:
+        return response.content.decode('utf-8')
+    return ""
 
 def extract_item_data(href: str, info_block: bs4.Tag, name_to_info: dict) -> dict:
     item_url = "https://rustlabs.com" + href
@@ -31,12 +92,13 @@ def extract_item_data(href: str, info_block: bs4.Tag, name_to_info: dict) -> dic
     }
 
     try:
-        item = requests.get(item_url, headers=HEADERS)
-
-        if item.status_code != 200:
+        # Use the new get_page_content function
+        content = get_page_content(item_url)
+        
+        if not content:
             return appending
 
-        bs = BeautifulSoup(item.content, "html.parser")
+        bs = BeautifulSoup(content, "html.parser")
         td = bs.find_all(class_="stats-table")[0].find_all("td")
     except Exception as e:
         print(f"Error occurred while trying to scrape {item_url} for ID. Exception {e}")
@@ -51,17 +113,17 @@ def extract_item_data(href: str, info_block: bs4.Tag, name_to_info: dict) -> dic
 
 
 def main() -> None:
-    response = requests.get('https://wiki.rustclash.com/group=itemlist', headers=HEADERS)
-
-    if response.status_code != 200:
+    # Use FlareSolverr for the main page as well
+    main_content = get_page_content('https://wiki.rustclash.com/group=itemlist')
+    
+    if not main_content:
         print("An Error Has Occurred with request")
-        print(response.content)
         quit(1)
 
     output_json = defaultdict(list)
     output_markdown = "|Name|Image|ID|Stack Size|Despawn Time|\n|:-:|:-:|:-:|:-:|:-:|\n"
 
-    soup = BeautifulSoup(response.content, 'html.parser')
+    soup = BeautifulSoup(main_content, 'html.parser')
     info_blocks = soup.find_all('div', class_='info-block group')
 
     current_heading = ""
@@ -78,7 +140,7 @@ def main() -> None:
                 name_to_info[item["name"]] = {"image": item["image"], "id": item["id"],
                                               "stack_size": item["stack_size"], "despawn_time": item["despawn_time"]}
     except:
-        print("File does not exist or an error occured.")
+        print("File does not exist or an error occurred.")
 
     for i, info_block in enumerate(blocks):
         if info_block.name == "h2":
@@ -98,6 +160,10 @@ def main() -> None:
         for item in output_json[item_type]:
             name_to_info_output[item["name"]] = {"image": item["image"], "id": item["id"],
                                                  "stack_size": item["stack_size"], "despawn_time": item["despawn_time"]}
+
+    # Ensure data directory exists
+    import os
+    os.makedirs("data", exist_ok=True)
 
     with open("data/items.md", "w") as md_out:
         md_out.write(output_markdown)
