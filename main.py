@@ -55,6 +55,7 @@ def main() -> None:
 
     if response.status_code != 200:
         print("An Error Has Occurred with request")
+        print(response.content)
         quit(1)
 
     output_json = defaultdict(list)
