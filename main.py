@@ -14,7 +14,7 @@ HEADERS = {
 }
 
 # FlareSolverr configuration
-FLARESOLVERR_URL = os.environ.get('PROXY')
+FLARESOLVERR_URL = os.environ["proxy"]
 
 def solve_cloudflare(url: str, retries: int = 3) -> str:
     """
