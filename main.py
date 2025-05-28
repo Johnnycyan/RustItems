@@ -5,11 +5,18 @@ import requests
 import time
 import progressbar
 from collections import defaultdict
+import random
+import string
 
 from bs4 import BeautifulSoup
 
 # FlareSolverr configuration
 FLARESOLVERR_URL = os.environ["proxy"]
+characters = string.ascii_letters + string.digits
+    result = ''
+    for i in range(20):
+        result += random.choice(characters)
+SESSION = result
 
 def solve_cloudflare(url: str, retries: int = 3) -> str:
     """
@@ -18,7 +25,8 @@ def solve_cloudflare(url: str, retries: int = 3) -> str:
     payload = {
         "cmd": "request.get",
         "url": url,
-        "maxTimeout": 180000
+        "maxTimeout": 180000,
+        "session": SESSION
     }
     
     for attempt in range(retries):
@@ -47,6 +55,19 @@ def solve_cloudflare(url: str, retries: int = 3) -> str:
         print(f"Fallback request also failed: {str(e)}")
     
     return ""
+
+def destroy_session():
+    """
+    Destroy solver session
+    """
+    payload = {
+        "cmd": "session.destroy",
+        "session": SESSION
+    }
+
+    response = requests.post(FLARESOLVERR_URL, json=payload, timeout=180)
+    if result.get("status") == "ok":
+        print("session destroyed")
 
 def get_page_content(url: str) -> str:
     """
@@ -149,6 +170,8 @@ def main() -> None:
                                f"{data['despawn_time']}|\n"
             bar.update(i + 1)
             time.sleep(0.5)
+
+    destroy_session()
 
     bar.finish()
     name_to_info_output = {}
