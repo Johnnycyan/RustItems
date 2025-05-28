@@ -6,6 +6,9 @@ on:
   schedule:
     - cron: '0 1 * * *' # runs at 1 AM every day
 
+env:
+  proxy: ${{ secrets.PROXY }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
